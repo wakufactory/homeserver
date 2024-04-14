@@ -44,7 +44,7 @@ start.sh
 http-server . -p 443 -S -C local.crt  -K local.key --cors > log &
 ```
 
-access https://<local-ip>/
+access https://local-addr/
 
  
  
