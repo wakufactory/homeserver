@@ -3,6 +3,7 @@ const Shareroot = "share/"
 const Openlist = [
 	{reg:/\.(jpg|jpeg|png|gif)$/i,open:"apps/fullimg.html?"},
 	{reg:/\.(mov|mp4|m4v)$/i,open:"apps/video.html?"},
+	{reg:/\.pdf$/i,open:"apps/pdf/?"},
 	{reg:/\.(glb|vrm)$/i,open:"https://wakufactory.jp/wxr/tools/glbview.html?"},
 	{reg:/\.ply$/,open:"https://wakufactory.jp/wxr/splats/gsaf.html?"}
 ]
