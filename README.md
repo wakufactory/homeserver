@@ -35,7 +35,7 @@ const Openlist = [
 
 
  - set local ip address to Server
- - place share folders under Shareroot folder
+ - place share files under Shareroot folder
 
 ## start server 
 
