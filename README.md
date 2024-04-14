@@ -21,7 +21,7 @@ create certification
 
 config.js
 
-```
+```javascript
 const Server = "https://192.168.23.4/"
 const Shareroot = "share/" 
 const Openlist = [
@@ -32,7 +32,19 @@ const Openlist = [
 ]
 ```
 
+
+
  - set local ip address to Server
- - place share folders under Shareroot folder
+ - place share files under Shareroot folder
+
+## start server 
+
+start.sh
+```
+http-server . -p 443 -S -C local.crt  -K local.key --cors > log &
+```
+
+access https://local-addr/
+
  
  
