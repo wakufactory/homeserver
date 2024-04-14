@@ -21,7 +21,7 @@ create certification
 
 config.js
 
-```
+```javascript
 const Server = "https://192.168.23.4/"
 const Shareroot = "share/" 
 const Openlist = [
