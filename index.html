@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width">
+<title>homeserver</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin></script>
+<script src="config.js"></script>
+<style type="text/css">
+body{
+	background-color:#444 ;
+	color:white ;
+}
+td {
+	padding-left:1rem ;
+}
+a,a:visited {
+	color:#aaf ;
+}
+</style>
+</head>
+<body>
+<div id=reactive>
+{{path}}
+<table>
+	<tr v-for="l of list">
+		<td><a :href="gethref(l)[0]" :target="gethref(l)[1]">{{l.name}}</td>
+		<td>{{l.date}}</td>
+		<td style="text-align:right;">{{l.size}}</td>
+	</tr>
+</table>
+</div>
+</body>
+<script type="module">
+let app= Vue.createApp({
+	data() {
+		return {
+			base:Server+Shareroot,
+			path:"",
+			list:[],
+			openlist:Openlist
+		}
+	},
+	methods:{
+		gethref(l) {
+			let href = `${this.base}${this.path}${l.path}`
+			let tgt = "_self" 
+			if(l.ic=="_blank") {
+				let path = this.path
+				href = `?${path}${l.path}`
+				if(l.path=="./../") {
+					const pp = path.split("/")
+					pp.pop()
+					pp.pop()
+					href = "?"+pp.join("/")+"/"
+				}
+			}
+			this.openlist.forEach(o=>{
+				if(l.path.match(o.reg)) {
+					href=o.open+`${this.base}${this.path}${l.path}`
+					tgt ="_blank"
+				}				
+			})
+			return [href,tgt]
+		}
+	}
+}).mount('#reactive')
+onload = function() {
+	const path = location.search.substr(1) 
+	fetch(Server+Shareroot+path).then(resp=>{
+		resp.text().then(data=>{
+			let list = [] 
+			data.split("\n").forEach(l=>{
+				const m = l.match(/<tr><td><i class="icon (.*)"><\/i><\/td><td class="perms"><code>(.*)<\/code><\/td><td class="last-modified">(.*)<\/td><td class="file-size"><code>(.*)<\/code><\/td><td class="display-name"><a href="(.*)">(.*)<\/a><\/td><\/tr>/)
+				if(m && !m[6].match(/^\./)) {
+					const doc = new DOMParser().parseFromString(m[6], 'text/html')
+					const dt = m[3].match(/([0-9]*)-([0-9]*)月-([0-9]*) ([0-9]*):([0-9]*)/)
+					list.push({
+						ic:m[1].replace("icon-",""),
+						mode:m[2],
+						date:`${dt[3]}-${("0"+dt[2].toString()).substr(-2)}-${dt[1]} ${dt[4]}:${dt[5]}`,
+						size:m[4],
+						path:m[5].substr(2) ,
+						name:doc.documentElement.textContent})
+				}
+			})
+			console.log(list)
+			list.sort((a,b)=>a.date<b.date?1:-1)
+			list.unshift({name:"⇑UP",path:"./../",ic:"_blank"})
+			app.path = path 
+			app.list = list 
+		})
+	})
+}
+</script>
+</html>
