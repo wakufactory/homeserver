@@ -32,6 +32,11 @@ const Openlist = [
 ]
 ```
 
+
+
+ - set local ip address to Server
+ - place share folders under Shareroot folder
+
 ## start server 
 
 start.sh
@@ -41,8 +46,5 @@ http-server . -p 443 -S -C local.crt  -K local.key --cors > log &
 
 access https://<local-ip>/
 
-
- - set local ip address to Server
- - place share folders under Shareroot folder
  
  
