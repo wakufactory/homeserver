@@ -21,13 +21,6 @@ a,a:visited {
 </head>
 <body>
 <div id=reactive>
-<div id=ui>
-	sort: <select v-model="sort">
-		<option value=0>filename</option>
-		<option value=1>date desc</option>
-		<option value=2>date asc</option>
-	</select>
-</div>
 {{path}}
 <table>
 	<tr v-for="l of list">
@@ -92,7 +85,6 @@ onload = function() {
 			data.split("\n").forEach(l=>{
 				const m = l.match(/<tr><td><i class="icon (.*)"><\/i><\/td><td class="perms"><code>(.*)<\/code><\/td><td class="last-modified">(.*)<\/td><td class="file-size"><code>(.*)<\/code><\/td><td class="display-name"><a href="(.*)">(.*)<\/a><\/td><\/tr>/)
 				if(m && !m[6].match(/^\./)) {
-					console.log(m) 
 					const doc = new DOMParser().parseFromString(m[6], 'text/html')
 					const dt = m[3].match(/([0-9]*)-(.*)-([0-9]*) ([0-9]*):([0-9]*)/)
 					list.push({
