@@ -21,6 +21,13 @@ a,a:visited {
 </head>
 <body>
 <div id=reactive>
+<div id=ui>
+	sort: <select v-model="sort">
+		<option value=0>filename</option>
+		<option value=1>date desc</option>
+		<option value=2>date asc</option>
+	</select>
+</div>
 {{path}}
 <table>
 	<tr v-for="l of list">
@@ -38,7 +45,8 @@ let app= Vue.createApp({
 			base:Server+Shareroot,
 			path:"",
 			list:[],
-			openlist:Openlist
+			openlist:Openlist,
+			sort:0
 		}
 	},
 	methods:{
@@ -74,15 +82,23 @@ onload = function() {
 	fetch(Server+Shareroot+path).then(resp=>{
 		resp.text().then(data=>{
 			let list = [] 
+			function month(m) {
+				let ret = null
+				const en = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m)
+				if(en>=0) ret = en+1 
+				if(m.match(/([0-9]*)月/)) ret = RegExp.$1+1 
+				return ("0"+ret.toString()).substr(-2)
+			}
 			data.split("\n").forEach(l=>{
 				const m = l.match(/<tr><td><i class="icon (.*)"><\/i><\/td><td class="perms"><code>(.*)<\/code><\/td><td class="last-modified">(.*)<\/td><td class="file-size"><code>(.*)<\/code><\/td><td class="display-name"><a href="(.*)">(.*)<\/a><\/td><\/tr>/)
 				if(m && !m[6].match(/^\./)) {
+					console.log(m) 
 					const doc = new DOMParser().parseFromString(m[6], 'text/html')
-					const dt = m[3].match(/([0-9]*)-([0-9]*)月-([0-9]*) ([0-9]*):([0-9]*)/)
+					const dt = m[3].match(/([0-9]*)-(.*)-([0-9]*) ([0-9]*):([0-9]*)/)
 					list.push({
 						ic:m[1].replace("icon-",""),
 						mode:m[2],
-						date:`${dt[3]}-${("0"+dt[2].toString()).substr(-2)}-${dt[1]} ${dt[4]}:${dt[5]}`,
+						date:`${dt[3]}-${month(dt[2])}-${dt[1]} ${dt[4]}:${dt[5]}`,
 						size:m[4],
 						path:m[5].substr(2) ,
 						name:doc.documentElement.textContent})
