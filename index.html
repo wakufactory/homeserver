@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width">
 <title>homeserver</title>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" crossorigin></script>
-<script src="config.js"></script>
+<script src="config.js?"></script>
 <style type="text/css">
 body{
 	background-color:#444 ;
@@ -17,6 +17,9 @@ td {
 a,a:visited {
 	color:#aaf ;
 }
+span.path {
+	font-weight: bold ;
+}
 </style>
 </head>
 <body>
@@ -27,8 +30,9 @@ a,a:visited {
 		<option value=1>date desc</option>
 		<option value=2>date asc</option>
 	</select>
+	<label><input type=checkbox v-model="thumb">show thumb</label>
 </div>
-{{path}}<br/>
+<spanc class=path>{{path_disp}}</spanc><br/>
 {{extmsg}}
 <table>
 	<tr>
@@ -36,9 +40,14 @@ a,a:visited {
 	</tr>
 	<template v-for="l of list" :key="l.name">
 	<tr>
-		<td><a :href="gethref(l)[0]" :target="gethref(l)[1]">{{l.name}}</td>
+		<td><a :href="gethref(l)[0]" :target="gethref(l)[1]">{{l.name}}
+		<template v-if="getthumb(l)">
+			<br/><img :src="getthumb(l)" height=100>
+		</template>			
+		</a></td>
 		<td>{{l.date}}</td>
 		<td style="text-align:right;">{{l.size}}</td>
+
 	</tr>
 	</template>
 </table>
@@ -51,11 +60,13 @@ let app= Vue.createApp({
 	data() {
 		return {
 			base:Server+Shareroot,
-			path:"Loading...",
+			path:"",
+			path_disp:"Loading...",
 			list:[],
 			openlist:Openlist,
 			sort:0,
-			extmsg:"" 
+			extmsg:"",
+			thumb:false 
 		}
 	},
 	methods:{
@@ -71,6 +82,13 @@ let app= Vue.createApp({
 				}
 			})
 			this.list = l
+		},
+		getthumb(l) {
+			if(!this.thumb)return false 
+			let ret = false 
+			if(l.name.match(/\.(jpe?g|png|gif|bmp)$/i)) ret = `${this.base}${this.path}${l.path}`
+//			if(l.name.match(/\.mp4$/i)) ret = `${this.base}${this.path}${l.path}`
+			return ret
 		},
 		gethref(l) {
 			if(l===null) {//dir up
@@ -96,6 +114,12 @@ let app= Vue.createApp({
 				}				
 			})
 			return [href,tgt]
+		}
+	},
+	watch: {
+		path(newpath) {
+			const doc = new DOMParser().parseFromString(decodeURI(newpath), 'text/html')
+			this.path_disp = doc.documentElement.textContent 
 		}
 	}
 }).mount('#reactive')

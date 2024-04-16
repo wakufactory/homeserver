@@ -33,6 +33,8 @@ function getdir(path) {
 				if(flag) resolve(list)
 				else reject("cannot get list") 
 			})
+		}).catch(err=>{
+			reject(err) 
 		})
 	})
 }
