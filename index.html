@@ -21,40 +21,69 @@ a,a:visited {
 </head>
 <body>
 <div id=reactive>
-{{path}}
+<div id=ui>
+	sort: <select v-model="sort" @change="setsort()">
+		<option value=0>filename</option>
+		<option value=1>date desc</option>
+		<option value=2>date asc</option>
+	</select>
+</div>
+{{path}}<br/>
+{{extmsg}}
 <table>
-	<tr v-for="l of list">
+	<tr>
+		<td><a :href="gethref(null)[0]">⇑UP</a></td><td></td><td></td>
+	</tr>
+	<template v-for="l of list" :key="l.name">
+	<tr>
 		<td><a :href="gethref(l)[0]" :target="gethref(l)[1]">{{l.name}}</td>
 		<td>{{l.date}}</td>
 		<td style="text-align:right;">{{l.size}}</td>
 	</tr>
+	</template>
 </table>
 </div>
 </body>
 <script type="module">
+import {getdir} from "./getdir.mod.js" 
+
 let app= Vue.createApp({
 	data() {
 		return {
 			base:Server+Shareroot,
-			path:"",
+			path:"Loading...",
 			list:[],
 			openlist:Openlist,
-			sort:0
+			sort:0,
+			extmsg:"" 
 		}
 	},
 	methods:{
+		setsort(mode) {
+			this.setlist(this.list)
+		},
+		setlist(l) {
+			l.sort((a,b)=>{
+				switch(this.sort) {
+					case "0": return a.name>b.name?1:-1;break 
+					case "1": return a.date<b.date?1:-1;break 
+					case "2": return a.date>b.date?1:-1;break 
+				}
+			})
+			this.list = l
+		},
 		gethref(l) {
+			if(l===null) {//dir up
+					const pp = this.path.split("/")
+					pp.pop()
+					pp.pop()
+					return ["?"+pp.join("/")+"/","_self"]		
+			}
 			let href = `${this.base}${this.path}${l.path}`
 			let tgt = "_self" 
 			if(l.ic=="_blank") {
 				let path = this.path
 				href = `?${path}${l.path}`
-				if(l.path=="./../") {
-					const pp = path.split("/")
-					pp.pop()
-					pp.pop()
-					href = "?"+pp.join("/")+"/"
-				}
 			}
 			if(l.path.match(/\.html?$/)) {
 				href=`${this.base}${this.path}${l.path}`
@@ -72,36 +101,16 @@ let app= Vue.createApp({
 }).mount('#reactive')
 onload = function() {
 	const path = location.search.substr(1) 
-	fetch(Server+Shareroot+path).then(resp=>{
-		resp.text().then(data=>{
-			let list = [] 
-			function month(m) {
-				let ret = null
-				const en = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m)
-				if(en>=0) ret = en+1 
-				if(m.match(/([0-9]*)月/)) ret = RegExp.$1+1 
-				return ("0"+ret.toString()).substr(-2)
-			}
-			data.split("\n").forEach(l=>{
-				const m = l.match(/<tr><td><i class="icon (.*)"><\/i><\/td><td class="perms"><code>(.*)<\/code><\/td><td class="last-modified">(.*)<\/td><td class="file-size"><code>(.*)<\/code><\/td><td class="display-name"><a href="(.*)">(.*)<\/a><\/td><\/tr>/)
-				if(m && !m[6].match(/^\./)) {
-					const doc = new DOMParser().parseFromString(m[6], 'text/html')
-					const dt = m[3].match(/([0-9]*)-(.*)-([0-9]*) ([0-9]*):([0-9]*)/)
-					list.push({
-						ic:m[1].replace("icon-",""),
-						mode:m[2],
-						date:`${dt[3]}-${month(dt[2])}-${dt[1]} ${dt[4]}:${dt[5]}`,
-						size:m[4],
-						path:m[5].substr(2) ,
-						name:doc.documentElement.textContent})
-				}
-			})
-			console.log(list)
-			list.sort((a,b)=>a.date<b.date?1:-1)
-			list.unshift({name:"⇑UP",path:"./../",ic:"_blank"})
-			app.path = path 
-			app.list = list 
-		})
+	getdir(Server+Shareroot+path).then(list=>{
+		console.log(list)
+		app.path = path 
+		app.setlist(list)
+		app.extmsg = "" 
+	}).catch(msg=>{
+		console.log(msg)
+		app.path = path 
+		app.setlist([])
+		app.extmsg = msg 
 	})
 }
 </script>
