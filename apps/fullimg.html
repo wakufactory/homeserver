@@ -4,11 +4,55 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="viewport" content="width=device-width">
 <title>image viewer</title>
-<script type="text/javascript">
+<script type="module">
 const $ = (id)=>document.getElementById(id)
+import {getdir} from "../getdir.mod.js" 
 onload=function() {
+	let alllist 
+	let ss 
 	if(location.search.substr(1).length>0) {
-		$("im").src = location.search.substr(1)
+		const path = location.search.substr(1)
+		if(path.match(/\/$/)) {
+			function setimg(idx) {
+					$("im").src = path+alllist[ss].path
+					$("ssname").innerHTML = alllist[ss].name
+					$('cnt').innerHTML = (ss+1)+"/"+alllist.length 				
+			}
+			$("im").src = path 
+			getdir(path).then(list=>{
+				alllist = list.filter((a)=>a.type=="file" && a.name.match(/\.(jpg|jpeg|png|gif|bmp)$/i))
+				alllist.sort((a,b)=> a.name>b.name?1:-1)
+				console.log(alllist)
+				if(alllist.length==0) {
+					$('cnt').innerHTML = "no image"
+					return 
+				}
+				ss = 0 
+				setimg(ss)
+				$('prev').addEventListener("click",ev=>{
+					if(ss>0) ss-- 
+					setimg(ss)
+				})
+				$('next').addEventListener("click",ev=>{
+					if(ss<alllist.length-1) ss++ 
+					setimg(ss)
+				})
+			})
+			let wf = false 
+			window.addEventListener("wheel", (ev)=>{
+				if(wf && Math.abs(ev.deltaY)>0.01 && Math.abs(ev.deltaY)<0.5) {
+//					$('t').innerHTML  += ev.deltaY +"\n"
+					wf = false 
+				}
+				if(!wf) {
+					if(ev.deltaY > 10) {$('next').click() ;wf=true}
+					if(ev.deltaY < -10) {$('prev').click()  ;wf=true}
+				}
+			})
+		} else {
+			$("im").src = path  			
+		}
+
 		$('ui').classList.add("trans")
 	}
 	let url = null  
@@ -44,6 +88,7 @@ onload=function() {
 <style type="text/css">
 html,body {
 	margin:0;
+	padding:0 ;
 	width:100% ;
 	height:100% ;
 	background-color:black ;
@@ -77,15 +122,17 @@ html,body {
 	overflow:scroll ;
 	width:100%;
 	height:100%;
+	text-align:center ;
 }
 </style>
 </head>
 <body>
 <div id=ui>
-ローカルにある画像を選択するかurlを入れてください<br/>
 select file:<input id=file type=file><br/>
 url:<input id=url type=text size=40><br/>
 fit:<input type=radio name=fit value=0 checked>a <input type=radio name=fit value=1>h <input type=radio name=fit value=2>v <br/>
+SS: <button id=prev>←</button> <span id=cnt></span> <button id=next>→</button> <span id=ssname></span>
+<pre id=t></pre>
 </div>
 <div id=roll class="" ><img id=im class="bfix" src="" /></div>
 </body>

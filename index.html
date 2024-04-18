@@ -47,7 +47,7 @@ span.path {
 		</a></td>
 		<td>{{l.date}}</td>
 		<td style="text-align:right;">{{l.size}}</td>
-
+		<td v-if="l.type=='dir'"><a :href="`apps/fullimg.html?${base}${path}${l.path}`" target="_blank">SS</a></td>
 	</tr>
 	</template>
 </table>
@@ -99,7 +99,7 @@ let app= Vue.createApp({
 			}
 			let href = `${this.base}${this.path}${l.path}`
 			let tgt = "_self" 
-			if(l.ic=="_blank") {
+			if(l.type=="dir") {
 				let path = this.path
 				href = `?${path}${l.path}`
 			}
