@@ -54,6 +54,7 @@ onload=function() {
 		}
 	})
 	if(path.length>0) {
+		$('url').value = decodeURI(path.replace(/^https?:\/\/[^\/]+\//,"/"))
 		if(path.match(/\/$/)) {	//ge directory 
 			$("im").src = path 
 			getdir(path).then(list=>{
