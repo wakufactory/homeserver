@@ -54,7 +54,7 @@ onload=function() {
 		}
 	})
 	if(path.length>0) {
-		if(path.match(/\/$/)) {
+		if(path.match(/\/$/)) {	//ge directory 
 			$("im").src = path 
 			getdir(path).then(list=>{
 				alllist = list.filter((a)=>a.type=="file" && a.name.match(/\.(jpg|jpeg|png|gif|bmp)$/i))
@@ -69,15 +69,37 @@ onload=function() {
 				$('ui').classList.add("trans")
 				setimg(ss)
 			})
-		} else if(path.match(/\.(zip|epub)$/i)) {
-			$('cnt').innerHTML = "Loading,,,"
-			fetch(path).then(data=>{
-				data.arrayBuffer().then(compressed=>{
-					$('cnt').innerHTML = "Extracting...."
-					getzip(compressed)
-				})
+		} else if(path.match(/\.(zip|epub)$/i)) {	//get zip
+			$('cnt').innerHTML = "Loading"
+			fetch(path).then(async response=>{
+				if(!response.status==200) {
+					('cnt').innerHTML = "Load Error" 
+					return
+				}
+				const size = response.headers.get('Content-Length')
+				const reader = response.body.getReader()
+				const chunks = []
+				let receivedLength = 0 
+				while(true) {
+					const {done, value} = await reader.read()
+					if (done) {
+						break;
+					}
+					chunks.push(value) 
+					receivedLength += value.length
+					const p = Math.floor(receivedLength/size*100) 
+					$('cnt').innerHTML = `Loading (${p}%)`
+				}
+				let chunksAll = new Uint8Array(receivedLength)
+				let position = 0;
+				for(let chunk of chunks) {
+					chunksAll.set(chunk, position)
+					position += chunk.length
+				}
+				$('cnt').innerHTML = "Extracting...."
+				getzip(chunksAll)
 			})
-		} else {
+		} else {	//get single image
 			alllist = []
 			$('ssname').innerHTML = path.split("/").splice(-1,1) 
 			$('cnt').innerHTML = ""
