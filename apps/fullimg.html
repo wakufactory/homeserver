@@ -4,20 +4,57 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="viewport" content="width=device-width">
 <title>image viewer</title>
+<script src="./lib/unzip.min.js"></script>
 <script type="module">
 const $ = (id)=>document.getElementById(id)
 import {getdir} from "../getdir.mod.js" 
 onload=function() {
-	let alllist 
+	let alllist = []
+	let type = 0
 	let ss 
-	if(location.search.substr(1).length>0) {
-		const path = location.search.substr(1)
-		if(path.match(/\/$/)) {
-			function setimg(idx) {
-					$("im").src = path+alllist[ss].path
-					$("ssname").innerHTML = alllist[ss].name
-					$('cnt').innerHTML = (ss+1)+"/"+alllist.length 				
+	let unzip 
+	const path = location.search.substr(1)
+	function setimg(idx) {
+		if(!alllist[idx]) return 
+		if(type==1) {
+			let plain 
+			try {
+				plain = unzip.decompress(alllist[ss])
+			} catch(err) {
+				$('cnt').innerHTML = err 
+				$('ui').classList.remove("trans")
+				return 
 			}
+			$("im").src = URL.createObjectURL(new Blob([plain],{type:"image/jpeg"})) 
+			$("ssname").innerHTML = alllist[ss]
+			$('cnt').innerHTML = (ss+1)+"/"+alllist.length 	
+		} else {
+			$("im").src = path+alllist[ss].path
+			$("ssname").innerHTML = alllist[ss].name
+			$('cnt').innerHTML = (ss+1)+"/"+alllist.length 	
+		}			
+	}
+	$('prev').addEventListener("click",ev=>{
+		if(ss>0) ss-- 
+		setimg(ss)
+	})
+	$('next').addEventListener("click",ev=>{
+		if(ss<alllist.length-1) ss++ 
+		setimg(ss)
+	})
+	let wf = false 
+	window.addEventListener("wheel", (ev)=>{
+		if(wf && Math.abs(ev.deltaY)>0.01 && Math.abs(ev.deltaY)<0.5) {
+//					$('t').innerHTML  += ev.deltaY +"\n"
+			wf = false 
+		}
+		if(!wf) {
+			if(ev.deltaY > 10) {$('next').click() ;wf=true}
+			if(ev.deltaY < -10) {$('prev').click()  ;wf=true}
+		}
+	})
+	if(path.length>0) {
+		if(path.match(/\/$/)) {
 			$("im").src = path 
 			getdir(path).then(list=>{
 				alllist = list.filter((a)=>a.type=="file" && a.name.match(/\.(jpg|jpeg|png|gif|bmp)$/i))
@@ -27,41 +64,79 @@ onload=function() {
 					$('cnt').innerHTML = "no image"
 					return 
 				}
+				type = 0
 				ss = 0 
+				$('ui').classList.add("trans")
 				setimg(ss)
-				$('prev').addEventListener("click",ev=>{
-					if(ss>0) ss-- 
-					setimg(ss)
-				})
-				$('next').addEventListener("click",ev=>{
-					if(ss<alllist.length-1) ss++ 
-					setimg(ss)
-				})
 			})
-			let wf = false 
-			window.addEventListener("wheel", (ev)=>{
-				if(wf && Math.abs(ev.deltaY)>0.01 && Math.abs(ev.deltaY)<0.5) {
-//					$('t').innerHTML  += ev.deltaY +"\n"
-					wf = false 
-				}
-				if(!wf) {
-					if(ev.deltaY > 10) {$('next').click() ;wf=true}
-					if(ev.deltaY < -10) {$('prev').click()  ;wf=true}
-				}
+		} else if(path.match(/\.(zip|epub)$/i)) {
+			$('cnt').innerHTML = "Loading,,,"
+			fetch(path).then(data=>{
+				data.arrayBuffer().then(compressed=>{
+					$('cnt').innerHTML = "Extracting...."
+					getzip(compressed)
+				})
 			})
 		} else {
-			$("im").src = path  			
+			alllist = []
+			$('ssname').innerHTML = path.split("/").splice(-1,1) 
+			$('cnt').innerHTML = ""
+			$("im").src = path  	
+			$('ui').classList.add("trans")		
 		}
+	}
+	function getzip(data) {
+		let fs 
+		try {
+			unzip = new Zlib.Unzip(new Uint8Array(data));
+			fs = unzip.getFilenames();
+		} catch(err) {
+			$('cnt').innerHTML = err 
+			return 
+		}
+		console.log(fs) 
+		alllist = fs.filter((a)=>a.match(/^[^\.]*\.(jpg|jpeg|png|gif|bmp)$/i))
+		alllist.sort((a,b)=>{
+			let pa = a.split("/")
+			let pan = pa[pa.length-1]
+			pa = pa.toSpliced(-1,1).join("")
+			let pb = b.split("/")
+			let pbn = pb[pb.length-1]
+			pb = pb.toSpliced(-1,1).join("")
+			if(pa!=pb) return pa>pb?1:-1
+			if(pan.match(/([0-9]+)/)) pan = parseInt(RegExp.$1) ;else pan=0
+			if(pbn.match(/([0-9]+)/)) pbn = parseInt(RegExp.$1) ;else pbn= 0
+			if(pan==pbn) return a>b?1:-1
+			return pan>pbn?1:-1
+		} )
 
+		if(alllist.length==0) {
+			$('cnt').innerHTML = "no image"
+			return 						
+		}
+		type = 1
+		ss = 0 
 		$('ui').classList.add("trans")
+		setimg(ss)
 	}
 	let url = null  
 	$('file').addEventListener("input", ev=>{
 		let f = ev.target.files[0]
 		if(!url) URL.revokeObjectURL(url) 
 		url = URL.createObjectURL(f)
-		$("im").src = url 
-		$('ui').classList.add("trans")
+		if(f.type=="application/zip") {
+			const reader = new FileReader()
+			reader.onload = (ev) =>{
+					getzip(reader.result) //ArrayBuffer
+			}
+			reader.readAsArrayBuffer(f)
+		} else {
+			alllist = []
+			$('ssname').innerHTML = f.name 
+			$('cnt').innerHTML = ""
+			$("im").src = url
+			$('ui').classList.add("trans")
+		}
 	})
 	$('url').addEventListener("change", ev=>{
 		$("im").src = ev.target.value
